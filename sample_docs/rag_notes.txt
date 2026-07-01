@@ -1,0 +1,9 @@
+RAG Notes
+
+Retrieval-Augmented Generation, often called RAG, is a design pattern where an application retrieves relevant information from an external knowledge source before asking the language model to answer. The goal is to ground the answer in specific documents instead of relying only on the model's built-in knowledge.
+
+A basic RAG pipeline has five steps. First, documents are loaded from files such as text documents, markdown files, or PDFs. Second, the text is split into smaller chunks so the system can search focused pieces of information. Third, each chunk is converted into an embedding, which is a list of numbers representing the meaning of the text. Fourth, the application searches for chunks with embeddings similar to the user's question. Fifth, the retrieved chunks are placed into the prompt so the language model can answer using that context.
+
+Vector search is different from keyword search. Keyword search looks for matching words. Vector search looks for semantic similarity, so it can find related ideas even when the exact words are different.
+
+In this first RAG lab, the vector store is intentionally simple and saved as a local JSON file. This makes the lab easier to understand. Production systems often use a dedicated vector database and stronger document processing.

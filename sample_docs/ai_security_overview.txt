@@ -1,0 +1,7 @@
+AI Security Overview
+
+AI security focuses on protecting applications that use large language models, retrieval systems, tools, memory, and agents. Traditional application security still matters, but AI systems introduce new risks because user input, retrieved documents, tool outputs, and long-term memory can all influence model behavior.
+
+In a simple AI chat assistant, the model usually answers based on the prompt and its existing training. In a retrieval-augmented generation application, the model is also given external context from documents. That makes the assistant more useful, but it also creates a new trust boundary: the retrieved context is not automatically safe just because it came from a document.
+
+A secure AI architecture should separate instructions from data, validate untrusted inputs, limit tool permissions, log important events, and require human approval for sensitive actions. Later sections of this course will apply those ideas to RAG, tool calling, memory, and agents.
