@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from config import settings
+from content_sanitizer import sanitize_content
 from document_loader import iter_supported_files, load_document
 from llm_service import LLMService
 from source_validator import validate_source
@@ -90,7 +91,7 @@ def build_context(results: list[SearchResult]) -> str:
                     f"Chunk: {record.chunk_index}",
                     f"Similarity: {result.score:.4f}",
                     "Text:",
-                    record.text,
+                    sanitize_content(record.text),
                 ]
             )
         )
