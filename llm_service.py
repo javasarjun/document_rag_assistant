@@ -6,6 +6,7 @@ import requests
 from openai import OpenAI
 
 from config import settings
+from context_isolation import ISOLATION_GUIDANCE, isolate_context
 
 
 class LLMService:
@@ -38,14 +39,15 @@ class LLMService:
                     "You are a document-grounded RAG assistant for an AI Security course. "
                     "Answer only using the retrieved context. If the context does not contain "
                     "enough information, say that you do not know based on the provided documents. "
-                    "Keep the answer clear, beginner-friendly, and concise."
+                    "Keep the answer clear, beginner-friendly, and concise. "
+                    + ISOLATION_GUIDANCE
                 ),
             },
             {
                 "role": "user",
                 "content": (
                     "Retrieved context:\n"
-                    f"{context}\n\n"
+                    f"{isolate_context(context)}\n\n"
                     "Question:\n"
                     f"{question}\n\n"
                     "Answer:"
