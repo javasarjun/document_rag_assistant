@@ -6,6 +6,7 @@ from pathlib import Path
 from config import settings
 from document_loader import iter_supported_files, load_document
 from llm_service import LLMService
+from source_validator import validate_source
 from text_splitter import split_text
 from vector_store import LocalVectorStore, SearchResult, VectorRecord
 
@@ -30,7 +31,8 @@ class DocumentRAGPipeline:
         self.vector_store = LocalVectorStore(settings.vector_store_path)
 
     def ingest_file(self, file_path: str | Path) -> IngestionResult:
-        path = Path(file_path)
+        # Section 6 defense #1: reject untrusted sources before loading.
+        path = validate_source(file_path)
         text = load_document(path)
         chunks = split_text(
             text,
