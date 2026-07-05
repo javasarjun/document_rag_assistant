@@ -30,15 +30,30 @@ class Settings:
     vector_store_path: Path = Path(os.getenv("VECTOR_STORE_PATH", "data/vector_store.json"))
     upload_dir: Path = Path(os.getenv("UPLOAD_DIR", "data/uploads"))
 
-    # Section 6 defense #1 - Trusted source validation.
-    # Only documents that live under a trusted directory are allowed into the
-    # RAG index, and only up to a maximum file size.
+    # Section 6 defense #1 - Trusted source validation (ingestion gate).
+    # Documents may only be *ingested* from these directories (blocks path
+    # traversal / arbitrary disk reads), up to a maximum file size. Being
+    # ingestible does NOT make a document authoritative - see below.
     trusted_source_dirs: tuple[str, ...] = tuple(
         part.strip()
         for part in os.getenv("TRUSTED_SOURCE_DIRS", "sample_docs,data/uploads").split(",")
         if part.strip()
     )
     max_document_mb: float = float(os.getenv("MAX_DOCUMENT_MB", "10"))
+
+    # Section 6 defense #4 - Enforcement layer.
+    # Trust authority: only documents under these directories are treated as
+    # trusted/approved sources. Everything else (notably user uploads) defaults
+    # to UNTRUSTED and cannot be used to answer sensitive questions. Keep this a
+    # strict subset of the ingest dirs so uploads can be indexed but not trusted.
+    trusted_authority_dirs: tuple[str, ...] = tuple(
+        part.strip()
+        for part in os.getenv("TRUSTED_AUTHORITY_DIRS", "sample_docs").split(",")
+        if part.strip()
+    )
+    # A retrieved chunk scoring at/above this many injection points is
+    # quarantined and never sent to the model.
+    injection_block_threshold: int = int(os.getenv("INJECTION_BLOCK_THRESHOLD", "5"))
 
     def validate(self) -> None:
         if self.llm_provider not in {"ollama", "openai"}:
@@ -52,6 +67,12 @@ class Settings:
 
         if not self.trusted_source_dirs:
             raise ValueError("At least one TRUSTED_SOURCE_DIRS entry is required.")
+
+        if not self.trusted_authority_dirs:
+            raise ValueError("At least one TRUSTED_AUTHORITY_DIRS entry is required.")
+
+        if self.injection_block_threshold <= 0:
+            raise ValueError("INJECTION_BLOCK_THRESHOLD must be greater than 0.")
 
         if self.max_document_mb <= 0:
             raise ValueError("MAX_DOCUMENT_MB must be greater than 0.")

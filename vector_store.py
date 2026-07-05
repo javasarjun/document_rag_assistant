@@ -14,6 +14,9 @@ class VectorRecord:
     chunk_index: int
     text: str
     embedding: list[float]
+    # Section 6 defense #4: whether the source is a trusted authority. Defaults
+    # to False so any legacy record without this field is treated as untrusted.
+    trusted: bool = False
 
 
 @dataclass

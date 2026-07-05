@@ -71,7 +71,11 @@ with left:
             try:
                 results = pipeline.ingest_folder("sample_docs")
                 for result in results:
-                    st.success(f"Indexed {result.chunks_added} chunks from {Path(result.source).name}")
+                    badge = "trusted" if result.trusted else "untrusted"
+                    st.success(
+                        f"Indexed {result.chunks_added} chunks from "
+                        f"{Path(result.source).name} ({badge} source)"
+                    )
                 st.rerun()
             except Exception as exc:  # noqa: BLE001 - beginner lab UI should show clear errors
                 st.error(str(exc))
@@ -89,9 +93,17 @@ with left:
                 destination.write_bytes(uploaded_file.getbuffer())
                 try:
                     result = pipeline.ingest_file(destination)
+                    badge = "trusted" if result.trusted else "untrusted (upload)"
                     st.success(
-                        f"Indexed {result.chunks_added} chunks from {uploaded_file.name}"
+                        f"Indexed {result.chunks_added} chunks from "
+                        f"{uploaded_file.name} — {badge}"
                     )
+                    if not result.trusted:
+                        st.warning(
+                            f"{uploaded_file.name} is treated as an UNTRUSTED source. "
+                            "It will not be used to answer sensitive questions "
+                            "(refunds, policy, legal, finance, etc.)."
+                        )
                 except Exception as exc:  # noqa: BLE001
                     st.error(f"Could not ingest {uploaded_file.name}: {exc}")
             st.rerun()
@@ -108,13 +120,36 @@ with right:
             try:
                 rag_answer = pipeline.ask(question, top_k=top_k)
                 st.markdown("### Answer")
-                st.write(rag_answer.answer)
+                if rag_answer.blocked:
+                    st.error(rag_answer.answer)
+                else:
+                    st.write(rag_answer.answer)
 
-                st.markdown("### Retrieved context")
+                if rag_answer.sensitive:
+                    st.info(
+                        "This was treated as a **sensitive question**, so only "
+                        "trusted sources are allowed to answer it."
+                    )
+
+                if rag_answer.quarantined:
+                    st.markdown("### 🛡️ Quarantined chunks (blocked before generation)")
+                    for decision in rag_answer.quarantined:
+                        record = decision.result.record
+                        st.warning(
+                            f"**{Path(record.source).name}** (chunk {record.chunk_index}, "
+                            f"{decision.trust}, injection score {decision.injection_score}) — "
+                            f"{decision.reason}"
+                        )
+
+                st.markdown("### Retrieved context used for the answer")
+                if not rag_answer.results or (rag_answer.blocked):
+                    st.caption("No context was allowed into the model for this answer.")
                 for index, result in enumerate(rag_answer.results, start=1):
                     record = result.record
+                    trust_badge = "✅ trusted" if getattr(record, "trusted", False) else "⚠️ untrusted"
                     with st.expander(
-                        f"Source {index}: {Path(record.source).name} | Chunk {record.chunk_index} | Score {result.score:.4f}"
+                        f"Source {index}: {Path(record.source).name} | Chunk {record.chunk_index} | "
+                        f"Score {result.score:.4f} | {trust_badge}"
                     ):
                         st.write(record.text)
             except Exception as exc:  # noqa: BLE001
